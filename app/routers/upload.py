@@ -2,6 +2,7 @@
 
 from fastapi import APIRouter, UploadFile, File, HTTPException
 from fastapi.responses import JSONResponse
+from app.utils.file_processing import extract_text
 import os
 import uuid
 
@@ -26,4 +27,11 @@ async def upload_file(file: UploadFile = File(...)):
     with open(file_location, "wb") as buffer:
         buffer.write(await file.read())
 
-    return JSONResponse(content={"file_id": unique_id, "filename": file.filename})
+    try:
+        text = await extract_text(file_location)
+    except Exception as e:
+        os.remove(file_location)  # Clean up the saved file
+        raise HTTPException(status_code=500, detail=str(e))
+
+    # Return the extracted text
+    return JSONResponse(content={"file_id": unique_id, "filename": file.filename, "text": text})

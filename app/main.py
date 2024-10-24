@@ -8,6 +8,7 @@ app = FastAPI(
     version="1.0.0"
 )
 
+
 app.include_router(upload.router, tags=["File Upload"])
 
 @app.get("/")
