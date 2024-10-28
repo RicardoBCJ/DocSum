@@ -1,21 +1,33 @@
 # app/routers/upload.py
 
-from fastapi import APIRouter, UploadFile, File, HTTPException
+from fastapi import APIRouter, UploadFile, File, HTTPException, Depends
 from fastapi.responses import JSONResponse
-from app.utils.file_processing import extract_text
 import os
 import uuid
+from app.utils.file_processing import extract_text
+from app.utils.nlp_processing import extract_entities, generate_summary
+from sqlalchemy.orm import Session
+from app.models.database import SessionLocal
+from app.models import models
+import json
 
 router = APIRouter()
 
-# Allowed file extensions
-ALLOWED_EXTENSIONS = {'pdf', 'docx', 'txt'}
+ALLOWED_EXTENSIONS = {'pdf', 'docx', 'txt', 'png', 'jpg', 'jpeg'}
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
+# Dependency to get DB session
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+
 @router.post("/upload")
-async def upload_file(file: UploadFile = File(...)):
+async def upload_file(file: UploadFile = File(...), db: Session = Depends(get_db)):
     if not allowed_file(file.filename):
         raise HTTPException(status_code=400, detail="Unsupported file type.")
 
@@ -30,8 +42,23 @@ async def upload_file(file: UploadFile = File(...)):
     try:
         text = await extract_text(file_location)
     except Exception as e:
-        os.remove(file_location)  # Clean up the saved file
+        os.remove(file_location)
         raise HTTPException(status_code=500, detail=str(e))
 
-    # Return the extracted text
-    return JSONResponse(content={"file_id": unique_id, "filename": file.filename, "text": text})
+    # Process text with NLP
+    entities = extract_entities(text)
+    summary = generate_summary(text)
+
+    # Store data in the database
+    document = models.Document(
+        file_id=unique_id,
+        filename=file.filename,
+        text=text,
+        summary=summary,
+        entities=json.dumps(entities)
+    )
+    db.add(document)
+    db.commit()
+    db.refresh(document)
+
+    return JSONResponse(content={"file_id": unique_id, "filename": file.filename})

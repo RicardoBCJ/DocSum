@@ -1,15 +1,20 @@
+# app/main.py
 from fastapi import FastAPI
-from fastapi import FastAPI
-from app.routers import upload
+from app.routers import upload, documents
+from app.models.database import engine, Base
+
 
 app = FastAPI(
-    title="DocDigest - Legal Document Summarizer",
-    description="An API to summarize legal documents and extract key information.",
-    version="1.0.0"
+    title="DocDigest - Document Summarizer",
+    description="An API to summarize documents and extract key information.",
+    version="0.1.0"
 )
 
+Base.metadata.create_all(bind=engine)
 
 app.include_router(upload.router, tags=["File Upload"])
+app.include_router(documents.router, tags=["Documents"])
+
 
 @app.get("/")
 async def root():
