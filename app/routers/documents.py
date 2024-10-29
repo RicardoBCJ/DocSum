@@ -2,21 +2,16 @@
 
 from fastapi import APIRouter, HTTPException, Depends, Query
 from sqlalchemy.orm import Session
-from app.models.database import SessionLocal
+from app.models.database import get_db  # Import get_db from database.py
 from app.models import models
 from sqlalchemy import desc
 import json
 
 router = APIRouter()
 
+# Existing get_db dependency is now imported from database.py
 
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
-
+@router.get("/documents/{file_id}")
 def get_document(file_id: str, db: Session = Depends(get_db)):
     document = db.query(models.Document).filter(models.Document.file_id == file_id).first()
     if document is None:
@@ -29,7 +24,7 @@ def get_document(file_id: str, db: Session = Depends(get_db)):
         "entities": json.loads(document.entities)
     }
 
-# New endpoint to get all documents with pagination
+# Existing endpoint to get all documents with pagination
 @router.get("/documents")
 def get_documents(
     skip: int = Query(0, ge=0),

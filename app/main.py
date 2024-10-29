@@ -1,8 +1,8 @@
 # app/main.py
+
 from fastapi import FastAPI
 from app.routers import upload, documents
 from app.models.database import engine, Base
-
 
 app = FastAPI(
     title="DocDigest - Document Summarizer",
@@ -12,9 +12,9 @@ app = FastAPI(
 
 Base.metadata.create_all(bind=engine)
 
+
 app.include_router(upload.router, tags=["File Upload"])
 app.include_router(documents.router, tags=["Documents"])
-
 
 @app.get("/")
 async def root():

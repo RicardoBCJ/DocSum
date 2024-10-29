@@ -11,3 +11,6 @@ env/
 
 # Other
 *.log
+
+#DB
+/docdigest.db
