@@ -3,11 +3,20 @@
 from fastapi import FastAPI
 from app.routers import upload, documents
 from app.models.database import engine, Base
+from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI(
-    title="DocDigest - Document Summarizer",
-    description="An API to summarize documents and extract key information.",
+    title="DocSum",
+    description="An API to test AI development.",
     version="0.1.0"
+)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 Base.metadata.create_all(bind=engine)
